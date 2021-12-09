@@ -19,3 +19,9 @@
 
 - chapter 06. 메시지와 인터페이스
   - 정리: src.main.java.com.example.object.chap06.chap06.md
+
+- chapter 07. 객체 분해
+  - 정리: src.main.java.com.example.object.chap07.chap07.md
+
+- chapter 08. 의존성 관리하기
+  - 정리: src.main.java.com.example.object.chap08.chap08.md
