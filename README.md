@@ -29,3 +29,16 @@
 
 - chapter 08. 의존성 관리하기
   - 정리: src.main.java.com.example.object.chap08.chap08.md
+
+- chapter 09. 유연한 설계
+  - 정리: src.main.java.com.example.object.chap09.chap09.md
+
+- chapter 10. 상속과 코드 재사용
+  - 새로운 예제
+    - 통화에 대한 요금 계산 시스템
+    - 패키지
+      - 중복 확인: src.main.java.com.example.object.chap10.a.dup
+      - 코드를 통한 중복 해결: src.main.java.com.example.object.chap10.b.code
+      - 상속을 통한 중복 해결: src.main.java.com.example.object.chap10.c.inherit
+      - 추상화 의존을 통하여 상속 문제점 해결: src.main.java.com.example.object.chap10.d.abstracts
+  - 정리: src.main.java.com.example.object.chap10.chap10.md
