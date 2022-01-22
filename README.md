@@ -1,9 +1,13 @@
-#### BookObject
-
-##### 조영호님 저서의 오브젝트 책 스터디 입니다.
+#### 리뷰 책 목록
+- 조영호님 저서의 오브젝트 책
   - http://www.yes24.com/Product/Goods/74219491
+  - package: com.review.object
 
-#### 목차
+- 마틴파울러의 리팩터링 2판
+  - http://www.yes24.com/Product/Goods/89649360
+  - package: com.review.refactor
+
+#### 오브젝트 책 리뷰
 
 - chapter 02. 객체지향 프로그래밍
   - 정리: src.main.java.com.example.object.chap02.chap02.md
