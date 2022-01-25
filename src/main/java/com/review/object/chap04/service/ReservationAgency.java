@@ -1,7 +1,7 @@
 package com.review.object.chap04.service;
 
 import com.review.object.chap02.entity.Money;
-import com.example.object.chap04.entity.*;
+import com.review.object.chap04.entity.*;
 import com.review.object.chap04.entity.Customer;
 import com.review.object.chap04.entity.Reservation;
 import com.review.object.chap04.entity.Screening;
