@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 
 @Service
-public class FunctionRefactoringBill {
+public class RefactoringBill {
 
     public String statement(Invoice invoice, Map<String, Play> plays) {
         Statement statement = new Statement();
@@ -24,7 +24,7 @@ public class FunctionRefactoringBill {
 
         for(Performance performance: statement.getPerformances()) {
             result += performance.playFor(plays).getName() + ": $"
-                    + (performance.amountFor(performance.playFor(plays)) / 100)
+                    + (performance.amountFor() / 100)
                     + "(" + performance.getAudience() + "석)\n";
         }
         result += "총액: $" + (statement.getTotalAmount() / 100)+ "\n";
@@ -39,7 +39,7 @@ public class FunctionRefactoringBill {
         result += "<tr><th>연극</th><th>좌석 수</th><th>금액</th></tr>";
         for(Performance performance: statement.getPerformances()) {
             result += "<tr><td>" + performance.playFor(plays).getName() + "</td>"
-                    + "<td>" + (performance.amountFor(performance.playFor(plays)) / 100) + "</td>"
+                    + "<td>" + (performance.amountFor() / 100) + "</td>"
                     + "<td>" + performance.getAudience() + "</td></tr>)\n";
         }
         result += "</table>\n";

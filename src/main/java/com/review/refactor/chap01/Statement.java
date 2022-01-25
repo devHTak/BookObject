@@ -32,7 +32,7 @@ public class Statement {
 
     private int totalAmount(List<Performance> performances, Map<String, Play> plays) {
         return performances.stream()
-                .map(performance -> performance.amountFor(performance.playFor(plays)))
+                .map(performance -> performance.amountFor())
                 .reduce(0, (sub, element) -> sub + element);
     }
 

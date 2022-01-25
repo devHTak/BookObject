@@ -11,10 +11,10 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-class FunctionRefactoringBillTest {
+class RefactoringBillTest {
 
     @Autowired
-    private FunctionRefactoringBill bill;
+    private RefactoringBill bill;
 
     @Test
     @DisplayName("function bill 테스트")
@@ -31,8 +31,11 @@ class FunctionRefactoringBillTest {
         Play othello = new Play("othello", "Othello", PlayType.TRAGEDY);
 
         Performance hamletPerformance = new Performance("hamlet", 55);
+        hamletPerformance.setPerformanceCalculator(hamlet);
         Performance asLikePerformance = new Performance("as-like", 35);
+        asLikePerformance.setPerformanceCalculator(asLike);
         Performance othelloPerformance = new Performance("othello", 40);
+        othelloPerformance.setPerformanceCalculator(othello);
 
         Invoice invoice = new Invoice();
         invoice.setCustomer("BigCo");
