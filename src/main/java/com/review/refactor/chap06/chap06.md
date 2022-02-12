@@ -83,7 +83,7 @@ public int getRating(Driver driver) {
     - 인라인하긱 까다로운 부분이 있다면 일단 남겨두고 여유가 생길 때 마다 틈틈히 처리
   - 함수 정의(원래 함수)를 삭제
 
-##### 함수 추출하기
+##### 변수 추출하기
 
 ```java
 public int calculatePrice(Order order) {
