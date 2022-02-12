@@ -68,7 +68,7 @@ class Person {
 ```java
 orders.filter(o -> o.getPriority().equals("high") || o.getPriority().equals("rush"))...
 
-orders.filter(o -> o.getPriority.higerThan(new Priority("normal")))...;
+orders.filter(o -> o.getPriority().higerThan(new Priority("normal")))...;
 ```
 
 - 배경
