@@ -98,11 +98,11 @@ public int getPayAmount() {
 
 ```java
 switch(bird.getType()) {
-	case BirdType.EuropeSwallow:
+	case EuropeSwallow:
 		return "normal";
-	case BirdType.AafricaSwallow:
+	case AafricaSwallow:
 		return (bird.getNumberOfCoconuts() > 2) ? "tired" : "normal";
-	case BirdType.NorwegianBlueParrot:
+	case NorwegianBlueParrot:
 		return (bird.getVoltage() > 100) ? "tanned skin" : "good";
 	default:
 		return "unknown";
@@ -140,6 +140,10 @@ class NorwegianBlueParrot {
   - 같은 방식으로 각 조건절을 해당 서브클래스에서 메서드로 구현
   - 슈퍼클래스 메서드에는 기본 동작 부분만 남긴다
     - 혹은 슈퍼클래스가 추상클래스이면 해당 메서드를 추상으로 선언하거나 서브클래스에서 처리해야 함을 알리는 에러를 던진다
+
+- 예제
+  - 예제 1. package com.review.refactor.chap10.bird.*
+  - 예제 2. package com.review.refactor.chap10.voyage.*
 
 ##### 특이 케이스 추가하기
 
