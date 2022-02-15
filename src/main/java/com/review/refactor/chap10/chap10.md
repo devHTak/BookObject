@@ -148,7 +148,7 @@ class NorwegianBlueParrot {
 ##### 특이 케이스 추가하기
 
 ```java
-if(customer.getName().equals("미확인 고객") customerName = "거주자";
+if(customer.getName().equals("미확인 고객")) customerName = "거주자";
 ```
 ```java
 class UnknownCustomer {
