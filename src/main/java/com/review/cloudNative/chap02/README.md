@@ -44,5 +44,48 @@
   - 우선순위 8. SpringApplication.getDefaultProperties()로 읽어올 수 있는 기본값
 - 특정 프로파일이 활성화되어 있으면, 프로파일 이름을 기준으로 src/main/resources/application-profilesName.yml 파일에 있는 속성 정보를 자동으로 읽어온다.
   ```java
+  @EnableConfigurationProperties
+  @SpringBootApplication
+  public class Application {
+
+    private final Logger Log = LoggerFactory.getLogger(getClass());
+
+    public static void main(String[] args) {
+      SpringApplication.run(CloludNativeJavaApplication.class, args);
+    }
+
+    @Autowired
+    public CloludNativeJavaApplication(ConfigurationProjectProperties cp) {
+      Log.info("ConfigurationProjectProperties projectName: " + cp.getProjectName());
+    }
+  }
+  @Component
+  @ConfigurationProperties("configurations")
+  public class ConfigurationProjectProperties {
+      private String projectName;
+
+      public String getProjectName() {
+          return projectName;
+      }
+
+      public void setProjectName(String projectName) {
+          this.projectName = projectName;
+      }
+  }
+  ```
+  - @EnableConfigurationProperties 는 스프링에게 설정 정보를 @ConfigurationProperties가 붙은 POJO에 매핑하라고 알려준다.
+  - configuration으로 시작하는 설정값은 @ConfigurationProperties("configurations") 에 붙은 빈에 매핑된다.
+  - 필드인 projectName은 configuration.projectName으로 지정된 설정값에 할당된다.
+  
 - @ConfigurationProperties 메커니즘은 광범위하게 사용된다.
   - actuator 의존관계를 추가하고 http://127.0.0.1:8080/configprops에 접속하면 어떤 설정 정보가 사용되는 지 확인할 수 있다.
+
+##### 스프링 클라우드 설정 서버로 중앙 집중형 설정 사용하기
+
+- 현재까지의 문제점
+  - 애플리케이션 설정 정보를 변경하기 위해서는 애플리케이션을 재시작해야 한다.
+  - 추적성이 없다.
+  - 설정이 분산되어 있어 파악하기 어렵다
+  - 손쉬운 암/복호화 방법이 없다.
+
+- 
