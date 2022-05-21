@@ -88,4 +88,25 @@
   - 설정이 분산되어 있어 파악하기 어렵다
   - 손쉬운 암/복호화 방법이 없다.
 
-- 
+- 스프링 클라우드 설정 서버
+  - 스프링 클라우드 설정 서버가 애플리케이션 재시작, 암/복호화 문제를 해결해준다.
+  - 스프링 클라우드 설정 서버는 클라이언트와 설정 정보와 설정 정보 저장소로의 통신 과정에 보안 기능을 추가할 수 있다.
+
+- 스프링 클라우드 설정 클라이언트
+  - bootstrap.properties
+    - application.properties와 공존하면 bootstrap.properties가 먼저 로딩된다.
+  - 스프링 클라우드 설정 클라이언트에는 @RefreshScope 를 통해 재시작 없이 설정 변경 사항을 반영할 수 있다.
+    ```java
+    @RestController
+    @RefreshScope
+    public class ProjectController {
+        private final String projectName;
+
+        public ProjectController(@Value("${configuration.projectName}") String pn) { this.projectName = pn;}
+    }
+    ```
+    - 리프레시 이벤트가 발생할 때마다 설정 정보를 새롭게 읽어와 다시 생성한다.
+  - RefreshScopeRefreshedEvent는 Actuator 가 제공하는 refresh 종단점에 POST 요청을 보내도 된다.
+  - 스프링 클라우드 버스를 사용하면 설정 변경 내용을 여러 설정 클라이언트에 한번에 적용할 수 있다.
+    - rabbit mq, kafka, reactor project 등 다양한 메시징 기술을 통해 스프링 클라우드 스트림이 장착된 버스를 통해 연결
+    - /bus/refresh 종단점 
