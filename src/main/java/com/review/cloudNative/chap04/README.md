@@ -68,11 +68,56 @@
     - 어떤 옵션을 선택하느냐에 따라 테스트 결과가 나오는 시간과 연관이 있다.
     
 - 슬라이스
-  - @JsonTest: JSON 직렬화/역직렬화 테스트를 위한 설정만을 활성화한다.
-  - @WebMvcTest: 스프링 부트 애플리케이션에서 개별 스프링 MVC 컨트롤러의 테스트를 지원하며 컨트롤러 메소드와의 상호작용하여 테스트할 수 있도록 Spring MVC Infrastructure 자동 설정
+  - @JsonTest
+    - JSON 직렬화/역직렬화 테스트를 위한 설정만을 활성화한다.
+    ```java
+    @Autowired private JacksonTester<User> json;
+    private User user;
+    
+    @Beforee
+    public void before() throws Exception {
+        User user = new User("user", "test@test.com");
+        user.setId(0L);
+        this.user = user;
+    }
+    
+    @Test
+    public void deserializeJson() throws Exception {
+        String content = "{\"username\": \"user\", \"email\": \"test@test.com\"}";
+        assertThat(this.json.parse(content)).isEqualTo(new User("user", "test@test.com");
+        assertThat(this.json.parseObject(content).getUsername()).isEqualTo("user");
+    }
+    
+    @Test
+    public void serializeJson() throws Exception {
+        assertThat(this.json.write(user)).isEqualTo("user.json");
+        // ...
+        assertJsonPropertyEquals("@.username", "user");
+        // ...
+    }
+    ```
+    
+  - @WebMvcTest
+    - 스프링 부트 애플리케이션에서 개별 스프링 MVC 컨트롤러의 테스트를 지원하며 컨트롤러 메소드와의 상호작용하여 테스트할 수 있도록 Spring MVC Infrastructure 자동 설정
     - MockMvc 객체를 이용한 가짜 요청을 보내 테스트할 수 있다.
-  - @DataJpaTest: 스프링 데이터 JPA를 사용하는 스프링 부트 애플리케이션 테스트를 편리하게 작성할 수 있고, 스프링 데이터 JPA 테스트에 사용될 내장 인메모리 데이터베이스도 제공
-  - @RestClientTest: 스프링 RestTemplate을 사용해 REST 서비스와 통신하는 기능 지원
+    
+  - @DataJpaTest
+    - 스프링 데이터 JPA를 사용하는 스프링 부트 애플리케이션 테스트를 편리하게 작성할 수 있고, 스프링 데이터 JPA 테스트에 사용될 내장 인메모리 데이터베이스도 제공
+    ```java
+    @Autowired private TestEntityManager entityManager;
+    @Autowired private AccountRepository accountRepository;
+    
+    @Test
+    public void findUserAccountShouldReturnAccounts() throws Exception {
+        this.entityManager.persist(new Account("jack", ACCOUNT_NUMBER);
+        List<Account> accounts = this.accountRepository.findAccountsByUsername("jack");
+        assertThat(accounts).size().isEqualTo(1);
+        // ...
+    }
+    ```
+    
+  - @RestClientTest
+    - 스프링 RestTemplate을 사용해 REST 서비스와 통신하는 기능 지원
     - MockRestServiceServer를 이용하여 외부의 서비스의 동작을 원하는 대로 흉내내서 제어하고 고정할 수 있다.
     ```java
     @Autowired private MockRestServiceServer server;
