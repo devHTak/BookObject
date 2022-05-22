@@ -165,6 +165,7 @@
       - dependency
       ```
       implementation 'org.springframework.cloud:spring-cloud-contract-spec:2.2.8.RELEASE'
+      testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-verifier:2.2.8.RELEASE'
       ```
       - UserService
       ```java
@@ -252,3 +253,33 @@
 
       apply plugin: "org.springframework.cloud.contract"
       ```
+    - 계정 서비스
+      - 로컬 저장소에 아티팩트 확인
+        ```
+        user-service-1.0.0-SNAPSHOT-stubs.jar
+        user-service-1.0.0-SNAPSHOT.jar
+        user-service-1.0.0-SNAPSHOT.pom
+        ```
+      - 단위 테스트 사용
+        ```
+        testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
+	      testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock'
+        ```
+      - 테스트 코드
+        ```java
+        @SpringBootTest(webEnvironment = WebEnvironment.NONE)
+        @AutoConfigureStubRunner(
+                ids={"cnj:user-service:+:stubs:8081"},
+                workOffline=true)
+        public class ConsumerDrivenTests {
+
+            @Autowired private UserService userService;
+
+            @Test
+            public void shouldReturnAuthenticatedUser() {
+                User actual = userService.getAuthenticatedUser();
+                Assertions.assertThat(actual).isNotNull();
+                Assertions.assertThat(actual.getUsername()).matches("[A-Za-z0-9]+");
+            }
+        }
+        ```
