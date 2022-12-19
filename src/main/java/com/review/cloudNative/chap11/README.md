@@ -145,3 +145,181 @@
   - 작업 스케줄링 + 수명 주기에 더 많은 제어를 원한다면 쿼츠 엔터프라이즈 작업 스케줄러와 스프링 인티그레이션을 함께 사용
 - 또 다른 접근 방법은 리더 선출 방식을 통해 클러스터에서 리더 노드를 선출하거나 제외하는 방법을 사용하는 것
   - 리더 노드는 작업 상태 정보를 유지할 필요가 없으며, 동일한 작업이 두 번 실행되는 등의 위험을 감수하는 역할을 한다
+
+##### 메시징을 사용한 스프링 배치 작업의 원격 파티셔닝
+
+- 스프링 배치는 병렬화를 두가지 방법으로 지원한다.
+  - 원격 파티셔닝
+  - 원격 청킹
+  - 두 방법 모두 하나의 스텝에 대한 제어권을 다른 노드로 전달을 지원하는 동작 방식
+  - 노드 간 전달에 필요한 연결은 일반적으로 메시징 사용
+- 원격 파티셔닝
+  - 레코드의 범위를 포함한 메시지를 다른 노드가 읽을 수 있도록 발생
+  - 워커 노드가 리더 노드에 모든 권한을 갖고 실행하며 실행 결과를 리더 노드가 취합
+  - 작업이 ItemReader, ItemWriter같이 IO 자원을 많이 요구한다면 원격 파티셔닝을 사용하는 것이 좋다.
+- 원격 청킹
+  - 프로세싱을 위한 데이터를 하나의 노드에서 읽고 이를 리더 노드에 전달하는 점이 다르다.
+  - 수행중인 작업이 ItemProcessor와 같이 더 많은 CPU 자원을 필요로 한다면, 원격 청킹을 사용하는 것이 좋다.
+- 대부분 배치 작업은 IO 집약적으로 원격 파티셔닝 구조를 많이 사용한다.
+
+- 예시
+  - 파티셔닝을 위한 프로파일
+    ```java
+    public class Profiles {
+        public static final String WORKER_PROFILE = "worker";
+        public static final String LEADER_PROFILE = "!" + WORKER_PROFILE;
+    }
+    ```
+    - 리더 노드와 워커 노드는 MessageChannel을 통해 통신하며, 스프링 클라우드 스트림을 사용한 MessageChannel 인스턴스를 사용할 수 있다.
+  - 애플리케이션 진입점
+    ```java
+    @EnableBatchProcessing
+    @IntegrationComponentScan
+    @SpringBootApplication
+    public class SpringBatchApplication {
+        public static void main(String[] args) {
+            SpringApplication.run(SpringBatchApplication.class, args);
+        }
+        // 폴링에 필요한 MessageChannel 구현을 톹ㅇ해 기본 전역 폴러를 지정
+        @Bean(name = PollerMetadata.DEFAULT_POLLER)
+        PollerMetadata defaultPoller() {
+            return Pollers.fixedRate(10, TimeUnit.SECONDS).get();
+        }
+        @Bean
+        JdbcTemplate jdbcTemplate(DataSource dataSource) {
+            return new JdbcTemplate(dataSource);
+        }
+    }
+    ```
+  - 파티셔닝 설정
+    ```java
+    @Configuration
+    @Profile(Profiles.LEADER_PROFILE)
+    public class JobConfiguration {
+        @Bean
+        Job job(JobBuilderFactory jbf,
+                LeaderStepConfiguration lsc) {
+            return jbf.get("job")
+                    .incrementer(new RunIdIncrementer())
+                    .start(lsc.stagingStep(null, null)) // stagingStep을 통해 NEW_PEOPLE 테이블을 리셋
+                    .next(lsc.partitionStep(null, null, null, null)) // 파티셔닝 Step은 작업을 다른 노드에 분배
+                    .build();
+        }
+    }
+    ```
+    - 두 개의 스텝을 처리하는 하나의 스프링 배치 Job
+    - Tasklet을 사용하여 데이터베이스를 비우는 작업
+  - 파티셔닝 Step 설정
+    ```java
+    Configuration
+    class LeaderStepConfiguration {
+        @Bean
+        Step stagingStep(StepBuilderFactory sbf, JdbcTemplate jdbc) {
+            return sbf.get("staging")
+                .tasklet((contribution, chunkContext) -> {
+                    jdbc.execute("truncate NEW_PEOPLE");
+                    return RepeatStatus.FINISHED;
+                }).build();
+        }
+        @Bean
+        Step partitionStep(StepBuilderFactory sbf, Partitioner p, PartitionHandler ph, WorkerStepConfiguration wsc) {
+            Step workerStep = wsc.workerStep(null);
+            return sbf.get("partitionStep")
+                    .partitioner(workerStep.getName(), p)
+                    .partitionHandler(ph)
+                    .build();
+        }
+        @Bean
+        MessageChannelPartitionHandler partitionHandler(@Value("${partition.grid-size:4}") int gridSize, MessagingTemplate messagingTemplate,  JobExplorer jobExplorer) {
+            MessageChannelPartitionHandler partitionHandler = new MessageChannelPartitionHandler();
+            partitionHandler.setMessagingOperations(messagingTemplate);
+            partitionHandler.setJobExplorer(jobExplorer);
+            partitionHandler.setStepName("workerStep");
+            partitionHandler.setGridSize(gridSize);
+            return partitionHandler;
+        }
+        @Bean
+        MessagingTemplate messagingTemplate(LeaderChannels channels) {
+            return new MessagingTemplate(channels.leaderRequestsChannel());
+        }
+        @Bean
+        Partitioner partitioner(JdbcOperations jdbcTemplate,
+                                @Value("${partition.table:PEOPLE}") String table,
+                                @Value("${partition.column:ID}") String column) {
+            return new IdRangeParitioner(jdbcTemplate, table, column);
+        }
+    }
+    ```
+    - 프록시 노드처럼 동작하는 데, 워커 노드에 분배하는 역할
+    - partitionStep에서는 원격 노드 중 어떤 노드가 워커 스텝을 Partitioner와 PartitionHandler로 호출할 지 정보를 알아야 한다.
+    - PartitionHandler 는 리더 노드의 원본 StepExecution을 책임진다.
+  - StepLocator 를 사용하여 스텝 실행 요청을 보내는 방법
+    ```java
+    @Configuration
+    @Profile(Profiles.WORKER_PROFILE)
+    public class WorkerConfiguration {
+        @Bean
+        StepLocator stepLocator() {
+            return new BeanFactoryStepLocator();
+        }
+        @Bean
+        StepExecutionRequestHandler stepExecutionRequestHandler(JobExplorer explorer, StepLocator stepLocator) {
+            StepExecutionRequestHandler handler = new StepExecutionRequestHandler();
+            handler.setStepLocator(stepLocator);
+            handler.setJobExplorer(explorer);
+            return handler;
+        }
+        @Bean
+        IntegrationFlow stepExecutionRequestHandlerFlow(WorkerChannels channels, StepExecutionRequestHandler handler) {
+            MessageChannel channel = channels.workerRequestsChannels();
+            GenericHandler<StepExecutionRequest> h = (payload, headers) -> handler.handle(payload);
+            return IntegrationFlows.from(channel)
+                    .handle(StepExecutionRequest.class, h)
+                    .channel(channels.workerRepliesChannels()).get();
+        }
+    }
+    ```
+    - 워커 노드는 실행할 작업을 브로커에서 선택하여 해당 요청을 StepExecutionRequestHandler로 보낸다.
+    - 그러면 해당 핸들러는 StepLocator를 이용하여 실제로 워커 애플리케이션의 컨텍스트 내에서 실행할 작업을 확인하게 된다.
+  - JDBC를 활용한 스텝 구현
+    ```java
+    @Configuration
+    public class WorkerStepConfiguration {
+        @Value("${partition.chunk-size}")
+        private int chunk;
+        @Bean
+        @StepScope
+        JdbcPagingItemReader<Person> reader(DataSource dataSource, @Value("#{stepExecutionContext['minValue']}") Long min,
+                                            @Value("#{stepExecutionContext['maxValue]}") Long max) {
+            MySqlPagingQueryProvider queryProvider = new MySqlPagingQueryProvider();
+            queryProvider.setSelectClause("id as id, email as email, age as age, first_name as firstName");
+            queryProvider.setFromClause("from PEOPLE");
+            queryProvider.setWhereClause("where id >= " + min + "and id <= " + max);
+            queryProvider.setSortKeys(Collections.singletonMap("id", Order.ASCENDING));
+
+            JdbcPagingItemReader<Person> reader = new JdbcPagingItemReader<>();
+            reader.setDataSource(dataSource);
+            reader.setFetchSize(this.chunk);
+            reader.setQueryProvider(queryProvider);
+            reader.setRowMapper((rs, i) -> {
+                return new Person(rs.getLong("id"), rs.getString("email"), rs.getString("firstName"), rs.getInt("age"));
+            });
+            return reader;
+        }
+        @Bean
+        JdbcBatchItemWriter<Person> writer(DataSource dataSource) {
+            return new JdbcBatchItemWriterBuilder<Person>()
+                    .beanMapped()
+                    .dataSource(dataSource)
+                    .sql("INSERT INTO NEW_PEOPLE(age, firstName, email) VALUES(:age, :firstName, :email)")
+                    .build();
+        }
+        @Bean
+        Step workerStep(StepBuilderFactory sbf) {
+            return sbf.get("workerStep").<Person, Person>chunk(this.chunk)
+                    .reader(reader(null, null, null)).writer(writer(null)).build();
+        }
+    }
+    ```
+  - 애플리케이션 컴포넌트들은 MessageChannel 구현체를 통해 서로 연결된다
+    - leaderRequests, workerRequests, workerReplies 등 3개의 스트림
